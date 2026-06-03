@@ -25,6 +25,17 @@ parser.add_argument('--api', default='https://ord.uib.no',
 
 
 def henta_respons(api_sti, params=None):
+    """Kallar REST API-et med requests.get().
+
+    Sidan feila kan vera uføreseilege, fangar try-blokken alt.
+
+    Args:
+        params: Dict, ei liste av tuplar eller bytes for å senda i søkjestrengen
+    	  til API-et. (Frå https://docs.python-requests.org/en/latest/api/#requests.get.)
+
+    Returns:
+        Ein dict frå requests.Response av JSON-innhaldet i responsen.
+    """
     try:
         resp = requests.get(api_sti, params=params)
     except e:
@@ -38,8 +49,15 @@ def henta_respons(api_sti, params=None):
     return resp.json()
 
 
-# Erstatta søkjestrengen med eit regulært uttrykk.
 def erstatta_søkjestreng(s):
+    """Erstattar søkjestrengen frå Ordbok-API-et med eit regulært uttrykk.
+
+    Args:
+    	s: Den opphavelege søkjestrengen.
+
+    Returns:
+    	s: Søkjestrengen som regulært uttrykk (str).
+    """
     for x, y in [('_*', '.+'), ('*', '.*'), ('%', '.*'), ('_', '.')]:
         s = s.replace(x, y)
 
@@ -47,6 +65,19 @@ def erstatta_søkjestreng(s):
 
 
 def samanslå_ordbok_og_artiklar(alle_artiklane):
+    """Slår saman dei to listene av bokmålske og nynorske artikkel-ID-ar.
+
+    Responsen frå API-et skil bokmåls- og nynorskartiklar frå kvarandre. For å
+    redusera kompleksiteten i main() vert dei slegne saman til éi liste.
+
+    Args:
+    	alle_artiklane: Ein dict av streng til liste, til dømes:
+
+    	  {'bm': [136192, 66170, …], 'nn': [140465, 87000, …]}
+
+    Returns:
+    	Ei liste av tuplar, [('bm', 136192), …, ("nn", 140465)]
+    """
     ordbok_og_artiklar = []
 
     for ordbok, artiklar in alle_artiklane.items():
@@ -57,10 +88,28 @@ def samanslå_ordbok_og_artiklar(alle_artiklane):
 
 
 def is_explanation(x):
+    """Filtrerer forklårande tekst."""
     return x['type_'] == 'explanation'
 
 
 def finna_forkl_inn(definisjonar):
+    """Finn lista over forklårande innretningar.
+
+    Ordbok-API-et bruker ordet «definisjonar» på ulike måtar, og difor skil
+    dette programmet ut alt som går inn i «éin» definisjon som «forklårande
+    innretningar». Til dømes bruker artikkelen til substantivet «liste»,
+    https://ordbokene.no/nno/nn/45865, både forklåringar («skriftleg
+    opprekning …»), døme («setje opp ei liste») og ei «compound»-liste («som
+    etterledd …»). Dette programmet, og dimed denne funksjonen, er berre
+    interessert i den fyrste typen, forklåringar.
+
+    Args:
+    	definisjonar: Ei liste frå HTTP-responsen som, grovt sagt, svarar til ei
+    	  liste av tydingar.
+
+    Returns:
+    	forklårande_innretningar: Ei liste av strengar av forklårande tekst.
+    """
     forklårande_innretningar = []
 
     for definisjon in definisjonar:
@@ -73,10 +122,23 @@ def finna_forkl_inn(definisjonar):
 
 
 def is_article_ref(x):
+    """Filtrerer artikkelreferansar."""
     return x['type_'] == 'article_ref'
 
 
 def førebu_innhald(innretning):
+    """Erstattar «$» i forklårande tekst.
+
+    Per no finst det andre bruksområde for «$» som ikkje vert erstatta.
+
+    Args:
+    	innretning: Ein dict frå HTTP-responsen som inkluderer forklårande
+    	  tekst.
+
+    Returns:
+    	innhald: Den forklårande teksta med artikkelreferansar erstatta med
+    	  det tilsvarande lemmaet.
+    """
     innhald = innretning['content']
 
     for i in filter(is_article_ref, innretning['items']):

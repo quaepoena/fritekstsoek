@@ -64,7 +64,7 @@ def erstatta_søkjestreng(s):
     return s
 
 
-def samanslå_ordbok_og_artiklar(alle_artiklane):
+def samanslå_artiklar(alle_artiklane):
     """Slår saman dei to listene av bokmålske og nynorske artikkel-ID-ar.
 
     Responsen frå API-et skil bokmåls- og nynorskartiklar frå kvarandre. For å
@@ -75,16 +75,12 @@ def samanslå_ordbok_og_artiklar(alle_artiklane):
 
     	  {'bm': [136192, 66170, …], 'nn': [140465, 87000, …]}
 
-    Returns:
-    	Ei liste av tuplar, [('bm', 136192), …, ("nn", 140465)]
+    Yields:
+    	Ein tuppel av (ordbok, artikkel-ID) t.d. ('bm', 136192).
     """
-    ordbok_og_artiklar = []
-
     for ordbok, artiklar in alle_artiklane.items():
         for artikkel in artiklar:
-            ordbok_og_artiklar.append((ordbok, artikkel))
-
-    return ordbok_og_artiklar
+            yield (ordbok, artikkel)
 
 
 def is_explanation(x):
@@ -155,9 +151,8 @@ def main(flags):
         resp_artiklar = henta_respons('{}/api/articles'.format(flags.api), params=params)
 
         søkjestreng = erstatta_søkjestreng(søkjestreng)
-        ordbok_og_artiklar = samanslå_ordbok_og_artiklar(resp_artiklar['articles'])
 
-        for ordbok, artikkel in ordbok_og_artiklar:
+        for ordbok, artikkel in samanslå_artiklar(resp_artiklar['articles']):
             resp_artikkel = henta_respons(
                 '{0}/{1}/article/{2}.json'.format(flags.api, ordbok, artikkel))
 

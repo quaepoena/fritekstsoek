@@ -17,8 +17,8 @@ parser = argparse.ArgumentParser(
     prog='fritekstsøk')
 parser.add_argument('-s', '--søk', required=True, type=parse_string,
                     help='Ein søkjestreng, evt. søkjestrengar skilde med mellomrom.')
-parser.add_argument('-o', '--ordbok', required=True, type=str,
-                    choices=['bm', 'nn', 'bm,nn'], default='bm,nn',
+parser.add_argument('-o', '--ordbok', type=str, choices=['bm', 'nn', 'bm,nn'],
+                    default='bm,nn',
                     help='Ordbok/-bøkene som skal brukast. Default er båe to.')
 parser.add_argument('--api', default='https://ord.uib.no',
                     help='API-et som skal brukast.')

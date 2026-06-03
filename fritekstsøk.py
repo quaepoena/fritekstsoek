@@ -150,7 +150,7 @@ def main(flags):
         params = {'w': søkjestreng, 'dict': flags.ordbok, 'wc': 'NOUN', 'scope': 'f'}
         resp_artiklar = henta_respons('{}/api/articles'.format(flags.api), params=params)
 
-        søkjestreng = erstatta_søkjestreng(søkjestreng)
+        søkje_re = erstatta_søkjestreng(søkjestreng)
 
         for ordbok, artikkel in samanslå_artiklar(resp_artiklar['articles']):
             resp_artikkel = henta_respons(
@@ -163,7 +163,7 @@ def main(flags):
             for forklårande_innretning in forklårande_innretningar:
                 innhald = førebu_innhald(forklårande_innretning)
 
-                if re.search(søkjestreng, innhald):
+                if re.search(søkje_re, innhald):
                     print('{0};{1};{2};{3}'.format(søkjestreng, ordbok, lemma, innhald))
 
 

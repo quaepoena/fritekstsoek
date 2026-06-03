@@ -22,6 +22,12 @@ parser.add_argument('-o', '--ordbok', type=str, choices=['bm', 'nn', 'bm,nn'],
                     help='Ordbok/-bøkene som skal brukast. Default er båe to.')
 parser.add_argument('--api', default='https://ord.uib.no',
                     help='API-et som skal brukast.')
+parser.add_argument('--ordklasse', default='NOUN',
+                    choices=['ADJ', 'ADP', 'ADV', 'AUX', 'CCONJ', 'DET', 'INTJ',
+                             'NOUN', 'NUM', 'PART', 'PRON', 'PROPN', 'PUNCT',
+                             'SCONJ', 'SYM', 'VERB', 'X'],
+                    help=('Ordklasser ein kan søkja etter. '
+                          'Jf. https://universaldependencies.org/u/pos/index.html.'))
 
 
 def henta_respons(api_sti, params=None):
@@ -147,7 +153,8 @@ def førebu_innhald(innretning):
 def main(flags):
 
     for søkjestreng in flags.søk:
-        params = {'w': søkjestreng, 'dict': flags.ordbok, 'wc': 'NOUN', 'scope': 'f'}
+        params = {'w': søkjestreng, 'dict': flags.ordbok,
+                  'wc': flags.ordklasse, 'scope': 'f'}
         resp_artiklar = henta_respons('{}/api/articles'.format(flags.api), params=params)
 
         søkje_re = erstatta_søkjestreng(søkjestreng)

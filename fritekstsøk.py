@@ -126,6 +126,7 @@ def is_article_ref(x):
     return x['type_'] == 'article_ref'
 
 
+# TODO: Erstatta alle «$»-ane.
 def førebu_innhald(innretning):
     """Erstattar «$» i forklårande tekst.
 

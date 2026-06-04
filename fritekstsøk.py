@@ -36,6 +36,7 @@ def henta_respons(api_sti, params=None):
     Sidan feila kan vera uføreseilege, fangar try-blokken alt.
 
     Args:
+        api_sti: Streng av stien til API-endepunktet.
         params: Dict, ei liste av tuplar eller bytes for å senda i søkjestrengen
     	  til API-et. (Frå https://docs.python-requests.org/en/latest/api/#requests.get.)
 

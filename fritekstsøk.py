@@ -195,7 +195,8 @@ def henta_ordklasse(infl_gr):
     	  group», på engelsk.
 
     Returns:
-    	Ein streng på norsk som tilsvarer det ein ser i ordbøkene på nett.
+    	ordklasse (str): Ein streng på norsk som tilsvarer det ein ser i
+    	  ordbøkene på nett.
     """
     ordklasse = ""
     if infl_gr.startswith('VERB'):

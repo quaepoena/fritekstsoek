@@ -56,6 +56,7 @@ def henta_respons(api_sti, params=None):
     return resp.json()
 
 
+@functools.cache
 def erstatta_søkjestreng(s):
     """Erstattar søkjestrengen frå Ordbok-API-et med eit regulært uttrykk.
 

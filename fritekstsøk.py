@@ -1,4 +1,7 @@
 import argparse
+import csv
+import functools
+import operator
 import re
 import requests
 import sys
@@ -28,6 +31,9 @@ parser.add_argument('--ordklasse',
                              'SCONJ', 'SYM', 'VERB'],
                     help=('Avgrensar søket til éi ordklasse. Eit utval frå '
                           'https://universaldependencies.org/u/pos/index.html.'))
+parser.add_argument('-u', '--utputt',
+                    help=('Utputtfila. Om ikkje definert vert resultata skrivne '
+                          'til stdout.'))
 
 
 def henta_respons(api_sti, params=None):
@@ -96,84 +102,208 @@ def is_explanation(x):
     return x['type_'] == 'explanation'
 
 
-def finna_forkl_inn(definisjonar):
-    """Finn lista over forklårande innretningar.
-
-    Ordbok-API-et bruker ordet «definisjonar» på ulike måtar, og difor skil
-    dette programmet ut alt som går inn i «éin» definisjon som «forklårande
-    innretningar». Til dømes bruker artikkelen til substantivet «liste»,
-    https://ordbokene.no/nno/nn/45865, både forklåringar («skriftleg
-    opprekning …»), døme («setje opp ei liste») og ei «compound»-liste («som
-    etterledd …»). Dette programmet, og dimed denne funksjonen, er berre
-    interessert i den fyrste typen, forklåringar.
-
-    Args:
-    	definisjonar: Ei liste frå HTTP-responsen som, grovt sagt, svarar til ei
-    	  liste av tydingar.
-
-    Returns:
-    	forklårande_innretningar: Ei liste av strengar av forklårande tekst.
-    """
-    forklårande_innretningar = []
-
-    for definisjon in definisjonar:
-        if 'elements' in definisjon:
-            forklårande_innretningar.extend(filter(is_explanation, definisjon['elements']))
-        else:
-            forklårande_innretningar.extend(filter(is_explanation, [definisjon]))
-
-    return forklårande_innretningar
+@functools.cache
+def henta_konsept(ordbok, nykel):
+    r = requests.get('https://ord.uib.no/{0}/concepts.json'.format(ordbok))
+    return r.json()['concepts'][nykel]['expansion']
 
 
-def is_article_ref(x):
-    """Filtrerer artikkelreferansar."""
-    return x['type_'] == 'article_ref'
-
-
-# TODO: Erstatta alle «$»-ane.
-def førebu_innhald(innretning):
+def førebu_innhald(innretning, *, ordbok=None):
     """Erstattar «$» i forklårande tekst.
 
     Per no finst det andre bruksområde for «$» som ikkje vert erstatta.
 
     Args:
-    	innretning: Ein dict frå HTTP-responsen som inkluderer forklårande
-    	  tekst.
+    	innretning: Ein dict med éi forklårande innretning og metadata om henne.
+    	ordbok (str): Ordboka ordet finst i.
 
     Returns:
-    	innhald: Den forklårande teksta med artikkelreferansar erstatta med
-    	  det tilsvarande lemmaet.
+    	innhald (str): Den forklårande teksta med artikkelreferansar erstatta
+    	  med det tilsvarande lemmaet.
     """
     innhald = innretning['content']
 
-    for i in filter(is_article_ref, innretning['items']):
-        innhald = innhald.replace('$', i['lemmas'][0]['lemma'], 1)
+    for item in innretning['items']:
+
+        match item['type_']:
+            case 'article_ref':
+                innhald = innhald.replace('$', item['lemmas'][0]['lemma'], 1)
+            case ('domain' | 'entity' | 'grammar' | 'language' | 'relation' |
+                  'rhetoric' | 'temporal'):
+                innhald = innhald.replace(
+                    '$', henta_konsept(ordbok, item['id']), 1)
+            case 'usage':
+                innhald = innhald.replace('$', item['text'], 1)
 
     return innhald
 
 
+def henta_artiklar(api_sti, params=None):
+    """Kallar REST API-et med requests.get().
+
+    Sidan feila kan vera uføreseilege, fangar try-blokken alt.
+
+    Args:
+        api_sti: Streng av stien til API-endepunktet.
+        params: Dict, ei liste av tuplar eller bytes for å senda i søkjestrengen
+    	  til API-et. (Frå https://docs.python-requests.org/en/latest/api/#requests.get.)
+
+    Returns:
+        Generatoren frå samanslå_artiklar().
+    """
+    resp = henta_respons(api_sti, params=params)
+    return samanslå_artiklar(resp['articles'])
+
+
+def finna_innretningar(resp):
+    """Finn lista over forklårande innretningar.
+
+    «Forklårande innretning» er brukt her om dei ulike slags definisjonar som
+    Ordbok-API-et bruker: forklåring, døme og liste av samansette ord med
+    leksemet som etterledd. (Det finst kanskje fleire.) Denne funksjonen finn
+    alle slike innretningar, som då vert filtrerte etter kvart til berre
+    «vanlege» forklåringar.
+
+    Strukturen til polyseme ord er forskjellig frå den til monoseme, og difor er
+    det naudsynleg å testa om ordet er polysemt, og so bruka ei for-blokk til om
+    det er.
+
+    Args:
+    	resp (dict): Ein ordbokartikkel som JSON frå
+    	  requests.Reponse.json().
+
+    Yields:
+    	Ein dict med éi forklårande innretning og metadata om henne.
+
+    """
+    definisjonar = resp['body']['definitions'][0]['elements']
+
+    for definisjon in definisjonar:
+        if 'elements' in definisjon:
+            for element in definisjon['elements']:
+                yield element
+        else:
+            yield definisjon
+
+
+@functools.cache
+def henta_ordklasse(infl_gr):
+    """Gjev att ordklassa på norsk.
+
+    Args:
+    	infl_gr (str): Ein streng med bøyingsklasseinformasjon, «inflection
+    	  group», på engelsk.
+
+    Returns:
+    	Ein streng på norsk som tilsvarer det ein ser i ordbøkene på nett.
+    """
+    ordklasse = ""
+    if infl_gr.startswith('VERB'):
+        ordklasse = 'verb'
+    elif infl_gr.startswith('ADJ'):
+        ordklasse = 'adjektiv'
+    elif infl_gr.startswith('ADP'):
+        ordklasse = 'preposisjon'
+    elif infl_gr.startswith('ADV'):
+        ordklasse = 'adverb'
+    elif infl_gr.startswith('CCONJ'):
+        ordklasse = 'konjunksjon'
+    elif infl_gr.endswith('PFX'):
+        ordklasse = 'prefiks'
+    elif infl_gr.startswith('DET'):
+        ordklasse = 'determinativ'
+    elif infl_gr.startswith('EXPR'):
+        ordklasse = 'uttrykk'
+    elif infl_gr.startswith('INTJ'):
+        ordklasse = 'interjeksjon'
+    elif infl_gr.startswith('NOUN'):
+        ordklasse = 'substantiv'
+    elif infl_gr.startswith('PRON'):
+        ordklasse = 'pronomen'
+    elif infl_gr.startswith('SCONJ'):
+        ordklasse = 'subjunksjon'
+    else:
+        ordklasse = 'ukjent'
+
+    return ordklasse
+
+
+def finna_forklåringar(ordbok, artikkel, api_sti=None):
+    """Finn forklåringane i ein ordbokartikkel.
+
+    Args:
+    	ordbok (str): Ordboka, anten 'bm' eller 'nn'.
+    	artikkel (int): Artikkel-ID-en.
+        api_sti: Streng av stien til API-endepunktet.
+
+    Returns:
+    	Ei liste av dict-ar med ei forklåring og informasjon om
+    	  lemmaet og ordboka.
+    """
+    resp = henta_respons(
+        '{0}/{1}/article/{2}.json'.format(api_sti, ordbok, artikkel))
+
+    forklåringar = filter(is_explanation, finna_innretningar(resp))
+    førebu = functools.partial(førebu_innhald, ordbok=ordbok)
+    forklåringar = map(førebu, forklåringar)
+
+    lemma = resp['lemmas'][0]['lemma']
+    infl_gr = resp['lemmas'][0]['paradigm_info'][0]['inflection_group']
+    ordklasse = henta_ordklasse(infl_gr)
+
+    return [{'lemma': lemma, 'ordbok': ordbok, 'forklåring': forklåring,
+             'ordklasse': ordklasse}
+            for forklåring in forklåringar]
+
+
+def køyra_fritekstsøk(søk, ordbok, api_sti, ordklasse=None):
+    """Finn ordboksartiklar som matchar søkjestrengen.
+
+    Args:
+    	søk (str): Søkjestrengen.
+    	ordbok (str): Ordboka, anten 'bm' eller 'nn'.
+        api_sti (str): Streng av stien til API-endepunktet.
+    	ordklasse: Streng av ordklassa ein vil leita etter, evt. None om ein
+    	  vil sjå alle.
+
+    Returns:
+    	Ei liste av dict-ar der kvar dict er eit matchande resultat saman med
+    	  søkjestrengen, ordboka, ordklassa og lemmaet.
+    """
+    params = {'w': søk, 'dict': ordbok, 'wc': ordklasse, 'scope': 'f'}
+    artiklar = henta_artiklar('{}/api/articles'.format(api_sti), params=params)
+
+    finna_forkl = functools.partial(finna_forklåringar, api_sti=api_sti)
+    forklåringar = map(lambda x: finna_forkl(x[0], x[1]), artiklar)
+    forklåringar = functools.reduce(operator.concat, forklåringar)
+
+    matchande = filter(lambda x: re.search(erstatta_søkjestreng(søk), x['forklåring']),
+                       forklåringar)
+
+    return [m | {'søk': søk} for m in matchande]
+
+
+def skriva_ut(resultat, utputtfil=None, *, fieldnames=None):
+    """Skriv ut som CSV."""
+    with open(utputtfil, 'w') as f:
+        w = csv.DictWriter(f, fieldnames=fieldnames)
+        w.writeheader()
+        [w.writerow(r) for r in resultat]
+
+
 def main(flags):
+    køyra = functools.partial(køyra_fritekstsøk, ordbok=flags.ordbok,
+                              api_sti=flags.api, ordklasse=flags.ordklasse)
+    resultat = functools.reduce(operator.concat, map(køyra, flags.søk))
 
-    for søkjestreng in flags.søk:
-        params = {'w': søkjestreng, 'dict': flags.ordbok,
-                  'wc': flags.ordklasse, 'scope': 'f'}
-        resp_artiklar = henta_respons('{}/api/articles'.format(flags.api), params=params)
-
-        søkje_re = erstatta_søkjestreng(søkjestreng)
-
-        for ordbok, artikkel in samanslå_artiklar(resp_artiklar['articles']):
-            resp_artikkel = henta_respons(
-                '{0}/{1}/article/{2}.json'.format(flags.api, ordbok, artikkel))
-
-            lemma = resp_artikkel['lemmas'][0]['lemma']
-            definisjonar = resp_artikkel['body']['definitions'][0]['elements']
-            forklårande_innretningar = finna_forkl_inn(definisjonar)
-
-            for forklårande_innretning in forklårande_innretningar:
-                innhald = førebu_innhald(forklårande_innretning)
-
-                if re.search(søkje_re, innhald):
-                    print('{0};{1};{2};{3}'.format(søkjestreng, ordbok, lemma, innhald))
+    fieldnames=['søk', 'ordbok', 'lemma', 'ordklasse', 'forklåring']
+    if flags.utputt:
+        skriva_ut(resultat, flags.utputt, fieldnames=fieldnaems)
+    else:
+        w = csv.DictWriter(sys.stdout,
+                           fieldnames=fieldnames)
+        w.writeheader()
+        [w.writerow(r) for r in resultat]
 
 
 if __name__ == '__main__':

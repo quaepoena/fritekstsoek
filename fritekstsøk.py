@@ -191,7 +191,7 @@ def henta_ordklasse(infl_gr):
     """Gjev att ordklassa på norsk.
 
     Args:
-    	infl_gr (str): Ein streng med bøyingsklasseinformasjon, «inflection
+    	infl_gr (str): Ein streng med ordklasseinformasjon, «inflection
     	  group», på engelsk.
 
     Returns:

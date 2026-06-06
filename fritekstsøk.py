@@ -263,7 +263,7 @@ def køyra_fritekstsøk(søk, ordbok, api_sti, ordklasse=None):
 
     finna_forkl = functools.partial(finna_forklåringar, api_sti=api_sti)
     forklåringar = map(lambda x: finna_forkl(x[0], x[1]), artiklar)
-    forklåringar = functools.reduce(operator.concat, forklåringar)
+    forklåringar = functools.reduce(operator.concat, forklåringar, [])
 
     matchande = filter(lambda x: re.search(erstatta_søkjestreng(søk), x['forklåring']),
                        forklåringar)
@@ -282,7 +282,7 @@ def skriva_ut(resultat, utputtfil=None, *, fieldnames=None):
 def main(flags):
     køyra = functools.partial(køyra_fritekstsøk, ordbok=flags.ordbok,
                               api_sti=flags.api, ordklasse=flags.ordklasse)
-    resultat = functools.reduce(operator.concat, map(køyra, flags.søk))
+    resultat = functools.reduce(operator.concat, map(køyra, flags.søk), [])
 
     fieldnames=['søk', 'ordbok', 'lemma', 'ordklasse', 'forklåring']
     if flags.utputt:

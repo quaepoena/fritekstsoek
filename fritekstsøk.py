@@ -199,32 +199,19 @@ def henta_ordklasse(infl_gr):
     	  ordbøkene på nett.
     """
     ordklasse = ""
-    if infl_gr.startswith('VERB'):
-        ordklasse = 'verb'
-    elif infl_gr.startswith('ADJ'):
-        ordklasse = 'adjektiv'
-    elif infl_gr.startswith('ADP'):
-        ordklasse = 'preposisjon'
-    elif infl_gr.startswith('ADV'):
-        ordklasse = 'adverb'
-    elif infl_gr.startswith('CCONJ'):
-        ordklasse = 'konjunksjon'
-    elif infl_gr.endswith('PFX'):
-        ordklasse = 'prefiks'
-    elif infl_gr.startswith('DET'):
-        ordklasse = 'determinativ'
-    elif infl_gr.startswith('EXPR'):
-        ordklasse = 'uttrykk'
-    elif infl_gr.startswith('INTJ'):
-        ordklasse = 'interjeksjon'
-    elif infl_gr.startswith('NOUN'):
-        ordklasse = 'substantiv'
-    elif infl_gr.startswith('PRON'):
-        ordklasse = 'pronomen'
-    elif infl_gr.startswith('SCONJ'):
-        ordklasse = 'subjunksjon'
-    else:
-        ordklasse = 'ukjent'
+    if infl_gr.startswith('VERB'): ordklasse = 'verb'
+    elif infl_gr.startswith('ADJ'): ordklasse = 'adjektiv'
+    elif infl_gr.startswith('ADP'): ordklasse = 'preposisjon'
+    elif infl_gr.startswith('ADV'): ordklasse = 'adverb'
+    elif infl_gr.startswith('CCONJ'): ordklasse = 'konjunksjon'
+    elif infl_gr.endswith('PFX'): ordklasse = 'prefiks'
+    elif infl_gr.startswith('DET'): ordklasse = 'determinativ'
+    elif infl_gr.startswith('EXPR'): ordklasse = 'uttrykk'
+    elif infl_gr.startswith('INTJ'): ordklasse = 'interjeksjon'
+    elif infl_gr.startswith('NOUN'): ordklasse = 'substantiv'
+    elif infl_gr.startswith('PRON'): ordklasse = 'pronomen'
+    elif infl_gr.startswith('SCONJ'): ordklasse = 'subjunksjon'
+    else: ordklasse = 'ukjent'
 
     return ordklasse
 

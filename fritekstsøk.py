@@ -22,12 +22,12 @@ parser.add_argument('-o', '--ordbok', type=str, choices=['bm', 'nn', 'bm,nn'],
                     help='Ordbok/-bøkene som skal brukast. Default er båe to.')
 parser.add_argument('--api', default='https://ord.uib.no',
                     help='API-et som skal brukast.')
-parser.add_argument('--ordklasse', default='NOUN',
-                    choices=['ADJ', 'ADP', 'ADV', 'AUX', 'CCONJ', 'DET', 'INTJ',
+parser.add_argument('--ordklasse',
+                    choices=['ADJ', 'ADP', 'ADV', 'CCONJ', 'DET', 'INTJ',
                              'NOUN', 'NUM', 'PART', 'PRON', 'PROPN', 'PUNCT',
-                             'SCONJ', 'SYM', 'VERB', 'X'],
-                    help=('Ordklasser ein kan søkja etter. '
-                          'Jf. https://universaldependencies.org/u/pos/index.html.'))
+                             'SCONJ', 'SYM', 'VERB'],
+                    help=('Avgrensar søket til éi ordklasse. Eit utval frå '
+                          'https://universaldependencies.org/u/pos/index.html.'))
 
 
 def henta_respons(api_sti, params=None):

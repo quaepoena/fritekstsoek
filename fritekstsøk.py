@@ -336,7 +336,7 @@ def skriva_til_fil(resultat, utputtfil, fieldnames):
         [w.writerow(r) for r in resultat]
 
 
-def riktig_innretningstype_p(innretning, innretningstype):
+def riktig_innretningstype(innretning, innretningstype):
     return innretning['type'] == innretningstype
 
 
@@ -346,7 +346,7 @@ def main(flags):
     resultat = itertools.chain.from_iterable(map(køyra, flags.søk))
 
     if flags.innretningstype:
-        riktig_inn = functools.partial(riktig_innretningstype_p,
+        riktig_inn = functools.partial(riktig_innretningstype,
                                        innretningstype=flags.innretningstype)
         resultat = filter(riktig_inn, resultat)
 

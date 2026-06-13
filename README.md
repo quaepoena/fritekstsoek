@@ -62,6 +62,29 @@ svine%,bm,substantiv,svineri,58773,døme,gulvet fløt av oppkast og annet sviner
 …
 ```
 
+Om ein vil samanlikna bruken av `svin%` vs. `gris%` med verb i ordbøkene:
+
+```
+python fritekstsøk.py -s 'svin%|gris%' -k VERB
+søk,ordbok,ordklasse,lemma,artikkel_id,type,innhald
+svin%,bm,verb,styrte,58022,døme,svindleren styrtet dem alle i ulykken
+svin%,bm,verb,curle,108693,forklåring,"rotere, svinge, skru"
+svin%,bm,verb,svive,58816,døme,bilen sveiv i svingen
+…
+gris%,bm,verb,velte,67535,døme,grisen veltet seg i gjørma
+gris%,bm,verb,ete,13208,døme,grisene eter seg opp til slaktevekt
+gris%,bm,verb,rote,48931,døme,grisen roter i jorda
+…
+svin%,nn,verb,styrte,74902,døme,svindlaren styrta dei alle i ulykka
+svin%,nn,verb,lure,46855,døme,vi lot oss lure av svindlarar
+svin%,nn,verb,svive,76181,døme,bilen sveiv i svingen
+…
+gris%,nn,verb,velte,88640,døme,grisen velte seg i gjørma
+gris%,nn,verb,ete,15798,døme,grisane et seg opp til slaktevekt
+gris%,nn,verb,utarte,85800,døme,sparinga kan utarte til griskleik
+…
+```
+
 ## N.B.
 
 - Berre det fyrste lemmaet er vist i eit resultat. Til dømes om eit søk matchar

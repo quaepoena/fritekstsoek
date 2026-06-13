@@ -8,6 +8,10 @@ import requests
 import sys
 
 
+def parse_str(x):
+    return x.split('|')
+
+
 parser = argparse.ArgumentParser(
     description=('Visa leksem med og definisjonar som matchar eit fritekstsøk. '
                  'Bruker Ordbok API: https://ord.uib.no/ord_2_API.html\n \n'
@@ -15,7 +19,10 @@ parser = argparse.ArgumentParser(
                  'python fritekstsøk.py -s urovekkjande'),
     formatter_class=argparse.RawTextHelpFormatter,
     prog='fritekstsøk')
-parser.add_argument('-s', '--søk', required=True, type=str, help='Søkjestrengen.')
+parser.add_argument('-s', '--søk', required=True, type=parse_str,
+                    help=('Søkjestrengen. Sjå '
+                          'https://ordbokene.no/nno/help/advanced for tillatne '
+                          'verdiar.'))
 parser.add_argument('-o', '--ordbok', type=str, choices=['bm', 'nn', 'bm,nn'],
                     default='bm,nn',
                     help='Ordbok/-bøkene som skal brukast. Default er båe to.')
@@ -334,8 +341,9 @@ def riktig_innretningstype_p(innretning, innretningstype):
 
 
 def main(flags):
-    resultat = køyra_fritekstsøk(flags.søk, flags.ordbok, flags.api,
-                                 ordklasse=flags.ordklasse)
+    køyra = functools.partial(køyra_fritekstsøk, ordbok=flags.ordbok,
+                              api_sti=flags.api, ordklasse=flags.ordklasse)
+    resultat = itertools.chain.from_iterable(map(køyra, flags.søk))
 
     if flags.innretningstype:
         riktig_inn = functools.partial(riktig_innretningstype_p,

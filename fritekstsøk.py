@@ -12,7 +12,7 @@ parser = argparse.ArgumentParser(
     description=('Visa leksem med og definisjonar som matchar eit fritekstsøk. '
                  'Bruker Ordbok API: https://ord.uib.no/ord_2_API.html\n \n'
                  'Brukseksempel:\n \n'
-                 'python fritekstsøk.py -s \'stor liten\' \' --ordbok'),
+                 'python fritekstsøk.py -s urovekkjande'),
     formatter_class=argparse.RawTextHelpFormatter,
     prog='fritekstsøk')
 parser.add_argument('-s', '--søk', required=True, type=str, help='Søkjestrengen.')
@@ -119,7 +119,7 @@ def henta_innretningar(definisjonar):
 
     «Forklårande innretning» er brukt her om dei ulike slags definisjonar som
     Ordbok-API-et bruker: forklåring, døme, liste av samansette ord og
-    delartikkel. Sjå README.md for meir informasjon.
+    underartikkel. Sjå README.md for meir informasjon.
 
     Args:
     	definisjonar: Ei liste av forklårande innretningar, evt. med fleire

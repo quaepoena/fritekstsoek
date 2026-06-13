@@ -260,10 +260,8 @@ def norsk_innretningstype(innretningstype):
     	Ein streng på norsk.
     """
     eng_til_nor = {'compound_list': 'samansetjingar',
-                   'definition': 'definisjon',
                    'example': 'døme',
-                   'explanation': 'forklåring',
-                   'sub_article': 'delartikkel'}
+                   'explanation': 'forklåring'}
 
     return eng_til_nor[innretningstype]
 
